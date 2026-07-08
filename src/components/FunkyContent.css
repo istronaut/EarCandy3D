@@ -26,6 +26,7 @@
     white-space: nowrap; /* Prevents text from wrapping */
     margin: 0;
     z-index: 0; /* Below the headphone model */
+    pointer-events: none;
 }
 
 .headphone-canvas {

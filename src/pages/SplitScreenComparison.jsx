@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-import MinimalContent from "../components/MinimalContent";
-import FunkyContent from "../components/FunkyContent";
+import HeadphonePanel from "../components/HeadphonePanel";
 
 import "./SplitScreenComparison.css";
 
@@ -82,7 +81,11 @@ export default function SplitScreenComparison() {
                         clipPath: `inset(0 ${100 - splitPosition}% 0 0)`
                     }}
                 >
-                    <MinimalContent />
+                    <HeadphonePanel
+                        type="minimal"
+                        title="MINIMAL"
+                        modelPath="/models/headphone_clean.glb"
+                    />
                 </div>
 
                 {/* Funky Page - Full size, clipped to show right side */}
@@ -92,7 +95,11 @@ export default function SplitScreenComparison() {
                         clipPath: `inset(0 0 0 ${splitPosition}%)`
                     }}
                 >
-                    <FunkyContent />
+                    <HeadphonePanel
+                        type="funky"
+                        title="FUNKY"
+                        modelPath="/models/headphone_funky.glb"
+                    />
                 </div>
             </div>
 
