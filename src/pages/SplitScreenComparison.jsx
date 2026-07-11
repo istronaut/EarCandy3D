@@ -84,7 +84,7 @@ export default function SplitScreenComparison() {
                     <HeadphonePanel
                         type="minimal"
                         title="MINIMAL"
-                        modelPath="/models/headphone_clean.glb"
+                        modelPath="models/headphone_clean.glb"
                     />
                 </div>
 
@@ -98,7 +98,7 @@ export default function SplitScreenComparison() {
                     <HeadphonePanel
                         type="funky"
                         title="FUNKY"
-                        modelPath="/models/headphone_funky.glb"
+                        modelPath="models/headphone_funky.glb"
                     />
                 </div>
             </div>
