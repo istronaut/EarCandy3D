@@ -11,8 +11,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 15rem;
-    font-family: Impact;
+    font-size: var(--font-size-display);
+    font-family: var(--font-heading);
     /* color: white; */
     background: -webkit-linear-gradient(
         rgba(177, 49, 212, 1) 0%,

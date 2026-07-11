@@ -42,7 +42,7 @@
 .Header h1,
 .header-option {
     display: inline-block;
-    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    font-family: var(--font-heading);
     margin-bottom: 5px;
 }
 

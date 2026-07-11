@@ -5,7 +5,7 @@ import HeadphonePanel from "../components/HeadphonePanel";
 import "./SplitScreenComparison.css";
 
 export default function SplitScreenComparison() {
-    const [splitPosition, setSplitPosition] = useState(50); 
+    const [splitPosition, setSplitPosition] = useState(50);
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef(null);
 
@@ -67,13 +67,11 @@ export default function SplitScreenComparison() {
             document.removeEventListener("touchmove", handleTouchMove);
             document.removeEventListener("touchend", handleTouchEnd);
         };
-    }, [isDragging]); 
+    }, [isDragging]);
 
     return (
         <div className="split-screen-container" ref={containerRef}>
-            {/* Content Pages with Headphone Models */}
             <div className="content-layer">
-                {/* Minimal Page - Full size, clipped to show left side */}
                 <div
                     className="content-panel minimal-page"
                     style={{
@@ -87,7 +85,6 @@ export default function SplitScreenComparison() {
                     />
                 </div>
 
-                {/* Funky Page - Full size, clipped to show right side */}
                 <div
                     className="content-panel funky-page"
                     style={{

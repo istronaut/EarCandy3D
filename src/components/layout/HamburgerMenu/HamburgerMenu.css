@@ -54,7 +54,7 @@
     padding: 1rem 1.5rem;
     border-radius: 6px;
     transition: all 0.2s ease;
-    font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+    font-family: var(--font-body);
     font-size: 1.1rem;
     font-weight: 500;
     border: 1px solid transparent;
@@ -97,5 +97,4 @@
     .hamburger-menu-content a {
         padding: 0.875rem 1.25rem;
         font-size: 1rem;
-    }
-}
+    }}

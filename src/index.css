@@ -8,6 +8,18 @@
     --text-color: #1a1a1a;
     --accent-color: #009063;
     --invert-background-color: #2c2c2c;
+
+    /* ── Typography ── */
+    /* Display / heading font — used for all titles, headings, subheadings, and the CTA */
+    --font-heading: 'Kage', Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    /* Body / UI font — used for body copy, labels, nav links, search, filters, cards */
+    --font-body: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+
+    /* Heading size scale */
+    --font-size-h1: 2.5rem;
+    --font-size-h2: 1.5rem;
+    --font-size-h3: 1.25rem;
+    --font-size-display: 15rem; /* Split-screen hero headings */
 }
 
 /* Dark theme variables */
@@ -22,6 +34,15 @@
         --invert-background-color: #f7f7f7;
     }
 }
+
+@font-face {
+    font-family: 'Kage';
+    src: url('./assets/fonts/KAGE_DEMO_FONT-Black.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 *::-webkit-scrollbar {
     display: none;
 }

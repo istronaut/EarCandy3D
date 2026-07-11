@@ -58,7 +58,7 @@
     background: transparent;
     color: gold;
     font-size: 2rem;
-    font-family: "Impact", "Haettenschweiler", "Arial Narrow Bold", sans-serif;
+    font-family: var(--font-heading);
     text-transform: uppercase;
     letter-spacing: 2px;
     border: 2px solid gold;

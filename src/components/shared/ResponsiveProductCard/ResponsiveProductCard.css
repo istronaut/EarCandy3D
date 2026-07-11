@@ -46,7 +46,7 @@
 }
 
 .product-name {
-    font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+    font-family: var(--font-body);
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--text-color);
@@ -59,7 +59,7 @@
 }
 
 .product-description {
-    font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+    font-family: var(--font-body);
     font-size: 0.9rem;
     color: var(--text-color);
     opacity: 0.8;
@@ -82,7 +82,7 @@
 }
 
 .product-price {
-    font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+    font-family: var(--font-body);
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--accent-color);

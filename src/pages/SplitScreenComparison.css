@@ -1,7 +1,3 @@
-:root {
-    --accent-color: #009063; /* Your brand/accent color */
-}
-
 /* Overall container for the split screen */
 .split-screen-container {
     position: relative;
