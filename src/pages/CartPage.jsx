@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./CartPage.css";
-import templateImg from "../assets/template_img.webp";
+import templateImg from "/template_img.webp";
 
 export default function CartPage() {
     const [cartItems, setCartItems] = useState([

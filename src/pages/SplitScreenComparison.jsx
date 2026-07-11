@@ -5,7 +5,7 @@ import HeadphonePanel from "../components/HeadphonePanel";
 import "./SplitScreenComparison.css";
 
 export default function SplitScreenComparison() {
-    const [splitPosition, setSplitPosition] = useState(50); // Initial position 50%
+    const [splitPosition, setSplitPosition] = useState(50); 
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef(null);
 
@@ -22,7 +22,6 @@ export default function SplitScreenComparison() {
         const newPosition =
             ((e.clientX - containerRect.left) / containerRect.width) * 100;
 
-        // Constrain the slider between 10% and 90% to avoid hiding one side completely
         const constrainedPosition = Math.max(10, Math.min(90, newPosition));
         setSplitPosition(constrainedPosition);
     };
@@ -68,7 +67,7 @@ export default function SplitScreenComparison() {
             document.removeEventListener("touchmove", handleTouchMove);
             document.removeEventListener("touchend", handleTouchEnd);
         };
-    }, [isDragging]); // Dependency array ensures effect runs only when isDragging changes
+    }, [isDragging]); 
 
     return (
         <div className="split-screen-container" ref={containerRef}>

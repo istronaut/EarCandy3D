@@ -3,7 +3,6 @@ import { useGLTF, Center } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 
 export default function HeadphoneModel({ modelPath, isMinimal }) {
-    // useGLTF can load absolute paths served from the public/ folder directly.
     const { scene } = useGLTF(modelPath);
     const [processedModel, setProcessedModel] = useState(null);
 

@@ -1,7 +1,7 @@
 import "./ProductShowcase.css";
 import VerticalProductCard from "../components/shared/VerticalProductCard/VerticalProductCard";
 import CarouselVisualizer from "../components/shared/CarouselVisualizer/CarouselVisualizer";
-import templateImg from "../assets/template_img.webp";
+import templateImg from "/template_img.webp";
 export default function ProductShowcase() {
     const products = [
         {
