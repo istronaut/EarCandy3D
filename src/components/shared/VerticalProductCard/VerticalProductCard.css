@@ -2,27 +2,31 @@
     flex: 0 0 auto;
     scroll-snap-align: start;
 
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    background-color: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    background-color: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    padding: 24px;
 
-    width: 280px;
-    min-height: 360px;
+    width: 300px;
+    min-height: 400px;
 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     text-align: center;
-    transition: transform 0.3s ease;
+
+    /* transition only for hover — slot transitions are handled by .carousel-item */
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.VerticalProductCard:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+/* Active (slot-0) card gets a subtle accent ring on hover */
+.carousel-item--slot-0 .VerticalProductCard:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 12px 40px rgba(0, 144, 99, 0.25);
 }
 
 .VerticalProductCard img {
@@ -37,27 +41,29 @@
     margin: 12px 0 8px;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
+    color: var(--text-color);
 }
 
 .VerticalProductCard p {
     font-family: var(--font-body);
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.75;
     margin-bottom: 12px;
 }
 
 .price {
     font-family: var(--font-body);
     font-weight: 700;
-    color: #000;
+    color: var(--accent-color);
+    font-size: 1.2rem;
     margin-bottom: 12px;
 }
 
 .add-to-cart {
     font-family: var(--font-body);
     padding: 10px;
-    background-color: #333;
+    background-color: var(--accent-color);
     color: white;
     border: none;
     border-radius: 6px;
@@ -66,5 +72,5 @@
 }
 
 .add-to-cart:hover {
-    background-color: #000;
+    background-color: var(--text-color);
 }
