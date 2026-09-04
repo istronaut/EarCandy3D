@@ -53,13 +53,13 @@ export default function ProductShowcase() {
     );
 
     // Compute the visual slot offset for each card relative to active.
-    // Returns -1 (left peek), 0 (centre), 1 (right peek), or null (hidden).
+    // Returns continuous offsets like -2 (far left), -1 (left peek), 0 (centre), 1 (right peek), 2 (far right).
     const getSlot = (index) => {
-        const diff = ((index - activeIndex) % count + count) % count;
-        if (diff === 0) return 0;
-        if (diff === 1) return 1;
-        if (diff === count - 1) return -1;
-        return null; // hidden
+        let diff = index - activeIndex;
+        const half = Math.floor(count / 2);
+        while (diff > half) diff -= count;
+        while (diff < -half) diff += count;
+        return diff;
     };
 
     return (
@@ -71,7 +71,7 @@ export default function ProductShowcase() {
             {/* Left arrow */}
             <button
                 className="carousel-arrow carousel-arrow--left"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate(1)}
                 aria-label="Previous product"
             >
                 &#8249;
@@ -81,13 +81,13 @@ export default function ProductShowcase() {
             <div className="carousel-stage" aria-live="polite">
                 {products.map((product, index) => {
                     const slot = getSlot(index);
-                    if (slot === null) return null;
 
                     return (
                         <div
                             key={index}
-                            className={`carousel-item carousel-item--slot-${slot}`}
-                            onClick={() => slot !== 0 && navigate(slot)}
+                            className="carousel-item"
+                            data-slot={slot}
+                            onClick={() => slot !== 0 && navigate(slot > 0 ? -1 : 1)}
                             aria-hidden={slot !== 0}
                         >
                             <VerticalProductCard product={product} />
@@ -99,7 +99,7 @@ export default function ProductShowcase() {
             {/* Right arrow */}
             <button
                 className="carousel-arrow carousel-arrow--right"
-                onClick={() => navigate(1)}
+                onClick={() => navigate(-1)}
                 aria-label="Next product"
             >
                 &#8250;

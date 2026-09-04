@@ -31,51 +31,66 @@
 }
 
 /* ── Shared card slot styles ─────────────────────────────────── */
+/* ── Shared card slot styles ─────────────────────────────────── */
 .carousel-item {
     position: absolute;
     top: 50%;
-    /* horizontal centre anchored per slot below */
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity   0.4s ease;
+    left: 50%;
+    /* All positioning done via transform from left: 50% for smooth linear motion */
+    transition: transform 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+                opacity 0.42s cubic-bezier(0.25, 1, 0.5, 1);
     will-change: transform, opacity;
 }
 
 /*
  * Slot  0 → centre, full size, fully opaque, interactive
- * Slot -1 → left edge, scaled down, semi-transparent, clickable
- * Slot  1 → right edge, scaled down, semi-transparent, clickable
+ * Slot -1 → left peek, scaled down, semi-transparent, clickable
+ * Slot  1 → right peek, scaled down, semi-transparent, clickable
+ * Slot -2 → far left (offscreen), hidden/faded
+ * Slot  2 → far right (offscreen), hidden/faded
  */
 
-.carousel-item--slot-0 {
-    left: 50%;
-    transform: translateX(-50%) translateY(-50%) scale(1);
+.carousel-item[data-slot="0"] {
+    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
     pointer-events: auto;
+    z-index: 5;
+}
+
+.carousel-item[data-slot="1"] {
+    transform: translate(calc(-50% + 320px), -50%) scale(0.68);
+    opacity: 0.55;
+    pointer-events: auto;
+    cursor: pointer;
     z-index: 3;
 }
 
-.carousel-item--slot--1 {
-    left: 0;
-    transform: translateX(-38%) translateY(-50%) scale(0.62);
+.carousel-item[data-slot="-1"] {
+    transform: translate(calc(-50% - 320px), -50%) scale(0.68);
     opacity: 0.55;
     pointer-events: auto;
     cursor: pointer;
-    z-index: 2;
+    z-index: 3;
 }
 
-.carousel-item--slot-1 {
-    left: 100%;
-    transform: translateX(-62%) translateY(-50%) scale(0.62);
-    opacity: 0.55;
-    pointer-events: auto;
-    cursor: pointer;
-    z-index: 2;
+.carousel-item[data-slot="2"] {
+    transform: translate(calc(-50% + 640px), -50%) scale(0.45);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
 }
 
-/* Dim the active card slightly when a peek card is hovered */
-.carousel-item--slot--1:hover,
-.carousel-item--slot-1:hover {
-    opacity: 0.8;
+.carousel-item[data-slot="-2"] {
+    transform: translate(calc(-50% - 640px), -50%) scale(0.45);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Dim/highlight peek cards on hover */
+.carousel-item[data-slot="1"]:hover,
+.carousel-item[data-slot="-1"]:hover {
+    opacity: 0.85;
 }
 
 /* ── Arrow buttons ─────────────────────────────────────────── */
@@ -144,15 +159,22 @@
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-    /* Pull the peek cards further off-screen on narrow viewports */
-    .carousel-item--slot--1 {
-        transform: translateX(-28%) translateY(-50%) scale(0.52);
+    .carousel-item[data-slot="1"] {
+        transform: translate(calc(-50% + 200px), -50%) scale(0.55);
         opacity: 0.45;
     }
 
-    .carousel-item--slot-1 {
-        transform: translateX(-72%) translateY(-50%) scale(0.52);
+    .carousel-item[data-slot="-1"] {
+        transform: translate(calc(-50% - 200px), -50%) scale(0.55);
         opacity: 0.45;
+    }
+
+    .carousel-item[data-slot="2"] {
+        transform: translate(calc(-50% + 400px), -50%) scale(0.35);
+    }
+
+    .carousel-item[data-slot="-2"] {
+        transform: translate(calc(-50% - 400px), -50%) scale(0.35);
     }
 
     .carousel-arrow {
@@ -166,9 +188,14 @@
 }
 
 @media (max-width: 480px) {
-    .carousel-item--slot--1,
-    .carousel-item--slot-1 {
-        opacity: 0.3;
+    .carousel-item[data-slot="1"] {
+        transform: translate(calc(-50% + 150px), -50%) scale(0.48);
+        opacity: 0.35;
+    }
+
+    .carousel-item[data-slot="-1"] {
+        transform: translate(calc(-50% - 150px), -50%) scale(0.48);
+        opacity: 0.35;
     }
 
     .carousel-arrow {

@@ -1,13 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import "./CarouselVisualizer.css";
 
 export default function CarouselVisualizer() {
     const canvasRef = useRef(null);
     const glRef = useRef(null);
     const programRef = useRef(null);
-    const mouseXRef = useRef(0.5); // Normalized mouse position (0-1)
+    const positionBufferRef = useRef(null);
+    const texCoordBufferRef = useRef(null);
     const animationRef = useRef(null);
     const timeRef = useRef(0);
+    const lastTimeRef = useRef(performance.now());
+
+    const mouseTargetRef = useRef({ x: 0.5, y: 0.5 });
+    const mouseCurrentRef = useRef({ x: 0.5, y: 0.5 });
 
     // Vertex shader
     const vertexShaderSource = `
@@ -21,154 +26,95 @@ export default function CarouselVisualizer() {
         }
     `;
 
-    // Fragment shader with multiple neon sine waves
+    // Fragment shader with 10 derivative-corrected anti-aliased neon sine waves
     const fragmentShaderSource = `
-            precision mediump float;
-            varying vec2 v_texCoord;
-            uniform float u_time;
-            uniform float u_mouseX; // Normalized X (0 to 1)
-            uniform float u_mouseY; // Normalized Y (0 to 1)
-            uniform vec2 u_resolution;
+        precision highp float;
+        varying vec2 v_texCoord;
+        uniform float u_time;
+        uniform float u_mouseX; // Normalized X (0 to 1)
+        uniform float u_mouseY; // Normalized Y (0 to 1)
+        uniform vec2 u_resolution;
 
-            void main() {
-                vec2 uv = v_texCoord; // uv coordinates range from 0 to 1
+        // Render line with derivative-corrected distance & crisp anti-aliasing
+        void getWaveLine(
+            vec2 uv, float aspect, float currentAmplitude, float frequency, float speed, float u_time,
+            float offset, float fMult, float sMult, float phase, float aMult, vec3 color,
+            float mouseXPulse, float mouseYStrength, float u_mouseX,
+            inout vec3 finalColor
+        ) {
+            float freq = frequency * fMult;
+            float spd = speed * sMult;
+            float amp = currentAmplitude * aMult;
 
-                // --- Amplitude Control based on Mouse and Screen Center ---
-                float baseAmplitude = 0.008; // Very small base amplitude for thin lines at edges
+            // Mouse disruption: subtle ripple turbulence right under cursor
+            float mouseDisrupt = mouseXPulse * mouseYStrength * sin((uv.x - u_mouseX) * 45.0 - u_time * 6.0) * 0.18;
+            float theta = uv.x * freq + u_time * spd + phase + mouseDisrupt;
 
-                // Influence based on X-axis distance from screen center (strongest at center)
-                float xCenterInfluence = 1.0 - smoothstep(0.0, 0.5, abs(uv.x - 0.5));
-                xCenterInfluence = pow(xCenterInfluence, 2.5); // Increased power for more pronounced center
-                
-                // Mouse X-position localized pulse (where the amplitude increases)
-                float mouseXPulse = exp(-pow(uv.x - u_mouseX, 2.0) * 80.0);
+            // Subtle localized bump distortion from mouse
+            float mouseBump = mouseXPulse * mouseYStrength * 0.03 * aMult * cos((uv.x - u_mouseX) * 30.0);
+            float waveVal = sin(theta) * amp + mouseBump;
 
-                // Mouse Y-position strength (how much the amplitude increases)
-                float mouseYStrength = 1.0 - u_mouseY; // Invert for stronger effect when mouse is lower
+            float waveDeriv = cos(theta) * (freq + mouseXPulse * 6.0) * amp;
 
-                // New amplitude calculation:
-                // Start with a base amplitude that's higher in the middle due to xCenterInfluence.
-                // The multiplier 0.25 significantly bumps up the central amplitude.
-                float amplitudeFromCenter = baseAmplitude + xCenterInfluence * 0.3; // Slightly increased multiplier
-                // Add mouse influence, modulated by mouseYStrength
-                float mouseAmplitude = mouseXPulse * mouseYStrength * 0.2; // Slightly increased mouse contribution
+            float dy = uv.y - offset - waveVal;
+            // Slope and aspect-ratio corrected perpendicular distance
+            float dist = abs(dy) / sqrt(1.0 + waveDeriv * waveDeriv * aspect * aspect);
 
-                float currentAmplitude = amplitudeFromCenter + mouseAmplitude;
+            float pxSize = 1.0 / u_resolution.y;
+            float coreRadius = pxSize * 1.1;
+            float aaWidth = pxSize * 1.2;
 
-                // Clamp amplitude to prevent extreme values, allowing higher max for central waves
-                currentAmplitude = clamp(currentAmplitude, 0.005, 0.35); // Increased max clamp to 0.35
+            // Crisp anti-aliased core line
+            float core = 1.0 - smoothstep(coreRadius - aaWidth, coreRadius + aaWidth, dist);
+            // Tight, subtle glow (drastically reduced haziness)
+            float glowRadius = pxSize * 6.0;
+            float glow = exp(-pow(dist / glowRadius, 2.0));
 
+            finalColor += color * (glow * 0.22 + core * 1.6);
+        }
 
-                float frequency = 10.0; // Slightly lower frequency for smoother waves
-                float speed = 2.0;
+        void main() {
+            vec2 uv = v_texCoord;
+            float aspect = u_resolution.x / u_resolution.y;
 
-                // Define vertical offsets for each line to prevent overlap
-                // These offsets are now much closer to the center (0.5)
-                float offset1 = 0.50;
-                float offset2 = 0.49;
-                float offset3 = 0.51;
-                float offset4 = 0.48;
-                float offset5 = 0.52;
-                float offset6 = 0.47;
-                float offset7 = 0.53;
-                float offset8 = 0.46;
-                float offset9 = 0.54;
-                float offset10 = 0.45;
+            // --- Amplitude Control based on Mouse and Screen Center ---
+            float baseAmplitude = 0.008;
 
-                // Create multiple sine waves with different offsets and phases
-                // Adjusted multipliers for frequency and speed to make them intertwine more
-                float wave1 = sin(uv.x * frequency + u_time * speed) * currentAmplitude;
-                float wave2 = sin(uv.x * frequency * 1.05 + u_time * speed * 0.95 + 0.5) * currentAmplitude * 0.9;
-                float wave3 = sin(uv.x * frequency * 0.95 + u_time * speed * 1.05 - 0.3) * currentAmplitude * 0.8;
-                float wave4 = sin(uv.x * frequency * 1.1 + u_time * speed * 0.9 + 1.0) * currentAmplitude * 0.7;
-                float wave5 = sin(uv.x * frequency * 0.9 + u_time * speed * 1.1 - 1.0) * currentAmplitude * 0.6;
-                float wave6 = sin(uv.x * frequency * 1.15 + u_time * speed * 0.85 + 0.2) * currentAmplitude * 0.5;
-                float wave7 = sin(uv.x * frequency * 0.85 + u_time * speed * 1.15 - 0.7) * currentAmplitude * 0.4;
-                float wave8 = sin(uv.x * frequency * 1.2 + u_time * speed * 0.8 + 0.8) * currentAmplitude * 0.3;
-                float wave9 = sin(uv.x * frequency * 0.8 + u_time * speed * 1.2 - 0.1) * currentAmplitude * 0.2;
-                float wave10 = sin(uv.x * frequency * 1.25 + u_time * speed * 0.75 + 0.6) * currentAmplitude * 0.1;
+            // Influence based on X-axis distance from screen center
+            float xCenterInfluence = 1.0 - smoothstep(0.0, 0.5, abs(uv.x - 0.5));
+            xCenterInfluence = pow(xCenterInfluence, 2.5);
 
+            // Tightly scoped mouse disruption pulse (narrow horizontal width)
+            float mouseXPulse = exp(-pow(uv.x - u_mouseX, 2.0) * 160.0);
 
-                // Calculate distances for each line from its vertical offset
-                float dist1 = abs(uv.y - offset1 - wave1);
-                float dist2 = abs(uv.y - offset2 - wave2);
-                float dist3 = abs(uv.y - offset3 - wave3);
-                float dist4 = abs(uv.y - offset4 - wave4);
-                float dist5 = abs(uv.y - offset5 - wave5);
-                float dist6 = abs(uv.y - offset6 - wave6);
-                float dist7 = abs(uv.y - offset7 - wave7);
-                float dist8 = abs(uv.y - offset8 - wave8);
-                float dist9 = abs(uv.y - offset9 - wave9);
-                float dist10 = abs(uv.y - offset10 - wave10);
+            // Mouse Y-position strength (gentle dynamic range)
+            float mouseYStrength = (1.0 - u_mouseY) * 0.5 + 0.4;
 
-                // Thin lines and glow effect
-                float lineThickness = 0.0015; // Slightly thicker core for smoother appearance
-                float glowWidth = 0.007;    // Wider glow for smoother transition
+            float amplitudeFromCenter = baseAmplitude + xCenterInfluence * 0.25;
+            float mouseAmplitude = mouseXPulse * mouseYStrength * 0.10;
 
-                float glow1 = 1.0 - smoothstep(0.0, glowWidth, dist1);
-                float core1 = 1.0 - smoothstep(0.0, lineThickness, dist1);
+            float currentAmplitude = clamp(amplitudeFromCenter + mouseAmplitude, 0.005, 0.45);
 
-                float glow2 = 1.0 - smoothstep(0.0, glowWidth, dist2);
-                float core2 = 1.0 - smoothstep(0.0, lineThickness, dist2);
+            float frequency = 10.0;
+            float speed = 2.0;
 
-                float glow3 = 1.0 - smoothstep(0.0, glowWidth, dist3);
-                float core3 = 1.0 - smoothstep(0.0, lineThickness, dist3);
+            vec3 finalColor = vec3(0.0);
 
-                float glow4 = 1.0 - smoothstep(0.0, glowWidth, dist4);
-                float core4 = 1.0 - smoothstep(0.0, lineThickness, dist4);
+            // 10 multi-layered neon waves with subtle mouse disruption
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.50, 1.00, 1.00,  0.0, 1.0, vec3(0.0, 1.0, 1.0), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.49, 1.05, 0.95,  0.5, 0.9, vec3(1.0, 0.0, 1.0), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.51, 0.95, 1.05, -0.3, 0.8, vec3(0.0, 1.0, 0.5), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.48, 1.10, 0.90,  1.0, 0.7, vec3(1.0, 0.5, 0.0), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.52, 0.90, 1.10, -1.0, 0.6, vec3(0.6, 0.1, 1.0), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.47, 1.15, 0.85,  0.2, 0.5, vec3(1.0, 0.2, 0.6), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.53, 0.85, 1.15, -0.7, 0.4, vec3(0.1, 0.6, 1.0), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.46, 1.20, 0.80,  0.8, 0.3, vec3(1.0, 0.9, 0.2), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.54, 0.80, 1.20, -0.1, 0.2, vec3(0.2, 1.0, 0.6), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
+            getWaveLine(uv, aspect, currentAmplitude, frequency, speed, u_time, 0.45, 1.25, 0.75,  0.6, 0.1, vec3(0.5, 1.0, 0.1), mouseXPulse, mouseYStrength, u_mouseX, finalColor);
 
-                float glow5 = 1.0 - smoothstep(0.0, glowWidth, dist5);
-                float core5 = 1.0 - smoothstep(0.0, lineThickness, dist5);
-
-                float glow6 = 1.0 - smoothstep(0.0, glowWidth, dist6);
-                float core6 = 1.0 - smoothstep(0.0, lineThickness, dist6);
-
-                float glow7 = 1.0 - smoothstep(0.0, glowWidth, dist7);
-                float core7 = 1.0 - smoothstep(0.0, lineThickness, dist7);
-
-                float glow8 = 1.0 - smoothstep(0.0, glowWidth, dist8);
-                float core8 = 1.0 - smoothstep(0.0, lineThickness, dist8);
-
-                float glow9 = 1.0 - smoothstep(0.0, glowWidth, dist9);
-                float core9 = 1.0 - smoothstep(0.0, lineThickness, dist9);
-
-                float glow10 = 1.0 - smoothstep(0.0, glowWidth, dist10);
-                float core10 = 1.0 - smoothstep(0.0, lineThickness, dist10);
-
-
-                // Different neon colors for each line
-                vec3 neon1 = vec3(0.0, 1.0, 1.0); // Cyan
-                vec3 neon2 = vec3(1.0, 0.0, 1.0); // Magenta
-                vec3 neon3 = vec3(0.0, 1.0, 0.0); // Green
-                vec3 neon4 = vec3(1.0, 0.5, 0.0); // Orange
-                vec3 neon5 = vec3(0.5, 0.0, 1.0); // Purple
-                vec3 neon6 = vec3(1.0, 0.0, 0.5); // Pink
-                vec3 neon7 = vec3(0.0, 0.5, 1.0); // Light Blue
-                vec3 neon8 = vec3(1.0, 1.0, 0.0); // Yellow
-                vec3 neon9 = vec3(0.0, 1.0, 0.5); // Spring Green
-                vec3 neon10 = vec3(0.5, 1.0, 0.0); // Chartreuse
-
-                // Apply colors and effects to each line
-                vec3 finalColor = vec3(0.0);
-
-                finalColor += neon1 * (glow1 * 0.8 + core1 * 1.5);
-                finalColor += neon2 * (glow2 * 0.7 + core2 * 1.4);
-                finalColor += neon3 * (glow3 * 0.9 + core3 * 1.6);
-                finalColor += neon4 * (glow4 * 0.6 + core4 * 1.3);
-                finalColor += neon5 * (glow5 * 0.85 + core5 * 1.55);
-                finalColor += neon6 * (glow6 * 0.75 + core6 * 1.45);
-                finalColor += neon7 * (glow7 * 0.95 + core7 * 1.65);
-                finalColor += neon8 * (glow8 * 0.65 + core8 * 1.35);
-                finalColor += neon9 * (glow9 * 0.8 + core9 * 1.5);
-                finalColor += neon10 * (glow10 * 0.7 + core10 * 1.4);
-
-                // Add subtle background glow based on all lines
-                float totalGlow = (glow1 + glow2 + glow3 + glow4 + glow5 + glow6 + glow7 + glow8 + glow9 + glow10) * 0.02;
-                finalColor += totalGlow * vec3(0.5); // General light background glow
-
-                gl_FragColor = vec4(finalColor, 1.0);
-            }
-        `;
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
+    `;
 
     const createShader = (gl, type, source) => {
         const shader = gl.createShader(type);
@@ -203,8 +149,10 @@ export default function CarouselVisualizer() {
         return program;
     };
 
-    const initWebGL = () => {
+    useEffect(() => {
         const canvas = canvasRef.current;
+        if (!canvas) return;
+
         const gl =
             canvas.getContext("webgl") ||
             canvas.getContext("experimental-webgl");
@@ -218,9 +166,12 @@ export default function CarouselVisualizer() {
 
         // Set canvas size
         const resizeCanvas = () => {
+            if (!canvas || !gl) return;
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
+            if (rect.width === 0 || rect.height === 0) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
             gl.viewport(0, 0, canvas.width, canvas.height);
         };
 
@@ -250,17 +201,18 @@ export default function CarouselVisualizer() {
 
         // Create full-screen quad
         const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
-
         const texCoords = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
 
         // Create buffers
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+        positionBufferRef.current = positionBuffer;
 
         const texCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+        texCoordBufferRef.current = texCoordBuffer;
 
         // Set up attributes
         const positionLocation = gl.getAttribLocation(program, "a_position");
@@ -277,40 +229,61 @@ export default function CarouselVisualizer() {
         // Get uniform locations
         const timeLocation = gl.getUniformLocation(program, "u_time");
         const mouseXLocation = gl.getUniformLocation(program, "u_mouseX");
+        const mouseYLocation = gl.getUniformLocation(program, "u_mouseY");
         const resolutionLocation = gl.getUniformLocation(
             program,
             "u_resolution"
         );
 
+        // Continuous exact modulo period for floating point time stability
+        const TIME_PERIOD = Math.PI * 200.0;
+        lastTimeRef.current = performance.now();
+
         // Animation loop
         const render = () => {
-            timeRef.current += 0.016; // ~60fps
+            const now = performance.now();
+            const dt = Math.min((now - lastTimeRef.current) / 1000, 0.1);
+            lastTimeRef.current = now;
 
-            gl.uniform1f(timeLocation, timeRef.current);
-            gl.uniform1f(mouseXLocation, mouseXRef.current);
-            gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+            timeRef.current = (timeRef.current + dt) % TIME_PERIOD;
 
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            // Smooth mouse position linear interpolation (lerp)
+            mouseCurrentRef.current.x +=
+                (mouseTargetRef.current.x - mouseCurrentRef.current.x) * 0.08;
+            mouseCurrentRef.current.y +=
+                (mouseTargetRef.current.y - mouseCurrentRef.current.y) * 0.08;
+
+            if (glRef.current && programRef.current && canvasRef.current) {
+                gl.uniform1f(timeLocation, timeRef.current);
+                gl.uniform1f(mouseXLocation, mouseCurrentRef.current.x);
+                gl.uniform1f(mouseYLocation, mouseCurrentRef.current.y);
+                gl.uniform2f(
+                    resolutionLocation,
+                    canvasRef.current.width,
+                    canvasRef.current.height
+                );
+
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            }
             animationRef.current = requestAnimationFrame(render);
         };
 
         render();
-    };
-
-    useEffect(() => {
-        initWebGL();
 
         const handleMouseMove = (e) => {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            mouseXRef.current = Math.max(0, Math.min(1, x / rect.width));
+            if (!canvasRef.current) return;
+            const rect = canvasRef.current.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            mouseTargetRef.current = {
+                x: Math.max(0, Math.min(1, x)),
+                y: Math.max(0, Math.min(1, y)),
+            };
         };
 
         const handleMouseLeave = () => {
-            mouseXRef.current = 0.5; // Reset to center
+            mouseTargetRef.current = { x: 0.5, y: 0.5 };
         };
 
         window.addEventListener("mousemove", handleMouseMove);
@@ -320,8 +293,27 @@ export default function CarouselVisualizer() {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
+            window.removeEventListener("resize", resizeCanvas);
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseleave", handleMouseLeave);
+
+            // Cleanup WebGL context resources
+            if (glRef.current) {
+                const glCtx = glRef.current;
+                if (programRef.current) {
+                    glCtx.deleteProgram(programRef.current);
+                    programRef.current = null;
+                }
+                if (positionBufferRef.current) {
+                    glCtx.deleteBuffer(positionBufferRef.current);
+                    positionBufferRef.current = null;
+                }
+                if (texCoordBufferRef.current) {
+                    glCtx.deleteBuffer(texCoordBufferRef.current);
+                    texCoordBufferRef.current = null;
+                }
+                glRef.current = null;
+            }
         };
     }, []);
 
@@ -331,3 +323,4 @@ export default function CarouselVisualizer() {
         </div>
     );
 }
+
