@@ -1,9 +1,9 @@
 package routes
 
-import{
+import(
 	"net/http"
 	"github.com/gin-gonic/gin"
-}
+)
 
 var router := gin.Default()
 

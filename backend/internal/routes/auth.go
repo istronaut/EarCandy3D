@@ -1,9 +1,9 @@
 package routes
 
-import {
+import (
 	"net/http"
 	"github.com/gin-gonic/gin"
-}
+)
 
 func addAuthRoutes(rg *gin.RouterGroup){
 	auth := rg.Group("/auth")
